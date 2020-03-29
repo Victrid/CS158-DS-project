@@ -23,6 +23,12 @@ class vector {
     friend class vector;
 
 private:
+    //structure:
+    //[0 1 2 3 4 5 6 7*]
+    // ^-----------^.......serve as data section.
+    //               ^.....serve as the full-vector flag.
+    //           ^.........r_size==(5-0):the current end index.
+
     // Data Container
     T* container;
     // capacity and size. Distinguished with option works.
@@ -41,80 +47,279 @@ public:
     class const_iterator;
     class iterator {
     private:
-        /**
-         * TODO add data members
-         *   just add whatever you want.
-         */
+        vector<T>* v;
+        size_t delta;
+        //legal for data access indicator
+        bool legal;
+
     public:
+        iterator() : v(nullptr), delta(0), legal(false){};
+        iterator(iterator& it) : v(it.v), delta(it.delta), legal(it.legal){};
+        iterator(const_iterator& it) : v(it.v), delta(it.delta), legal(it.legal){};
+        iterator(vector<T>* vec) : v(vec), delta(0), legal(true){};
+        iterator(vector<T>* vec, size_t dlt, bool le) : v(vec), delta(dlt), legal(le){};
         /**
          * return a new iterator which pointer n-next elements
          * as well as operator-
          */
         iterator operator+(const int& n) const {
-            //TODO
+            // check if bound valid.
+            if (delta + n < 0 || delta + n > v->r_size)
+                throw index_out_of_bound();
+            // forbid vector.end() access.
+            if (delta + n == v->r_size)
+                return iterator(v, delta + n, false);
+            else
+                return iterator(v, delta + n, true);
         }
         iterator operator-(const int& n) const {
-            //TODO
+            return *this + (-n);
         }
+
         // return the distance between two iterators,
         // if these two iterators point to different vectors, throw invaild_iterator.
         int operator-(const iterator& rhs) const {
-            //TODO
+            if (v != rhs.v)
+                throw invalid_iterator();
+            return delta - rhs.delta;
         }
         iterator& operator+=(const int& n) {
-            //TODO
+            // check if bound valid.
+            if (delta + n < 0 || delta + n > v->r_size)
+                throw index_out_of_bound();
+            // forbid vector.end() access, removing limit on others.
+            if (delta + n == v->r_size)
+                legal = false;
+            else
+                legal = true;
+
+            delta += n;
+            return *this;
         }
         iterator& operator-=(const int& n) {
-            //TODO
+            return *this += (-n);
         }
-        /**
-         * TODO iter++
-         */
-        iterator operator++(int) {}
-        /**
-         * TODO ++iter
-         */
-        iterator& operator++() {}
-        /**
-         * TODO iter--
-         */
-        iterator operator--(int) {}
-        /**
-         * TODO --iter
-         */
-        iterator& operator--() {}
-        /**
-         * TODO *it
-         */
-        T& operator*() const {}
-        /**
-         * a operator to check whether two iterators are same (pointing to the same memory address).
-         */
-        bool operator==(const iterator& rhs) const {}
-        bool operator==(const const_iterator& rhs) const {}
-        /**
-         * some other operator for iterator.
-         */
-        bool operator!=(const iterator& rhs) const {}
-        bool operator!=(const const_iterator& rhs) const {}
+
+        iterator operator++(int) {
+            // check if bound valid.
+            if (delta + 1 < 0 || delta + 1 > v->r_size)
+                throw index_out_of_bound();
+            iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta + 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta += 1;
+            return temp;
+        }
+
+        iterator& operator++() {
+            if (delta + 1 < 0 || delta + 1 > v->r_size)
+                throw index_out_of_bound();
+            iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta + 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta += 1;
+            return *this;
+        }
+
+        iterator operator--(int) {
+            // check if bound valid.
+            if (delta - 1 < 0 || delta - 1 > v->r_size)
+                throw index_out_of_bound();
+            iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta - 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta -= 1;
+            return temp;
+        }
+
+        iterator& operator--() {
+            if (delta - 1 < 0 || delta - 1 > v->r_size)
+                throw index_out_of_bound();
+            iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta - 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta -= 1;
+            return *this;
+        }
+
+        T& operator*() const {
+            // forbid vector.end() access
+            if (legal)
+                return v[delta];
+            else
+                return index_out_of_bound();
+        }
+
+        bool operator==(const iterator& rhs) const {
+            return (rhs.delta == delta && rhs.v == v);
+        }
+        bool operator==(const const_iterator& rhs) const {
+            return (rhs.delta == delta && rhs.v == v);
+        }
+
+        bool operator!=(const iterator& rhs) const {
+            return !(rhs.delta == delta && rhs.v == v);
+        }
+        bool operator!=(const const_iterator& rhs) const {
+            return !(rhs.delta == delta && rhs.v == v);
+        }
     };
-    /**
-     * TODO
-     * has same function as iterator, just for a const object.
-     */
+
     class const_iterator {
+    private:
+        vector<T>* v;
+        size_t delta;
+        //legal for data access indicator
+        bool legal;
+
+    public:
+        const_iterator() : v(nullptr), delta(0), legal(false){};
+        const_iterator(const_iterator& it) : v(it.v), delta(it.delta), legal(it.legal){};
+        const_iterator(iterator& it) : v(it.v), delta(it.delta), legal(it.legal){};
+        const_iterator(vector<T>* vec) : v(vec), delta(0), legal(true){};
+        const_iterator(vector<T>* vec, size_t dlt, bool le) : v(vec), delta(dlt), legal(le){};
+        /**
+         * return a new iterator which pointer n-next elements
+         * as well as operator-
+         */
+        const_iterator operator+(const int& n) const {
+            // check if bound valid.
+            if (delta + n < 0 || delta + n > v->r_size)
+                throw index_out_of_bound();
+            // forbid vector.end() access.
+            if (delta + n == v->r_size)
+                return const_iterator(v, delta + n, false);
+            else
+                return const_iterator(v, delta + n, true);
+        }
+        const_iterator operator-(const int& n) const {
+            return *this + (-n);
+        }
+
+        // return the distance between two iterators,
+        // if these two iterators point to different vectors, throw invaild_iterator.
+        int operator-(const const_iterator& rhs) const {
+            if (v != rhs.v)
+                throw invalid_iterator();
+            return delta - rhs.delta;
+        }
+        const_iterator& operator+=(const int& n) {
+            // check if bound valid.
+            if (delta + n < 0 || delta + n > v->r_size)
+                throw index_out_of_bound();
+            // forbid vector.end() access, removing limit on others.
+            if (delta + n == v->r_size)
+                legal = false;
+            else
+                legal = true;
+
+            delta += n;
+            return *this;
+        }
+        const_iterator& operator-=(const int& n) {
+            return *this += (-n);
+        }
+
+        const_iterator operator++(int) {
+            // check if bound valid.
+            if (delta + 1 < 0 || delta + 1 > v->r_size)
+                throw index_out_of_bound();
+            const_iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta + 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta += 1;
+            return temp;
+        }
+
+        const_iterator& operator++() {
+            if (delta + 1 < 0 || delta + 1 > v->r_size)
+                throw index_out_of_bound();
+            const_iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta + 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta += 1;
+            return *this;
+        }
+
+        const_iterator operator--(int) {
+            // check if bound valid.
+            if (delta - 1 < 0 || delta - 1 > v->r_size)
+                throw index_out_of_bound();
+            const_iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta - 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta -= 1;
+            return temp;
+        }
+
+        const_iterator& operator--() {
+            if (delta - 1 < 0 || delta - 1 > v->r_size)
+                throw index_out_of_bound();
+            const_iterator temp(*this);
+            // forbid vector.end() access, removing limit on others.
+            if (delta - 1 == v->r_size)
+                legal = false;
+            else
+                legal = true;
+            delta -= 1;
+            return *this;
+        }
+
+        const T& operator*() const {
+            // forbid vector.end() access
+            if (legal)
+                return v[delta];
+            else
+                return index_out_of_bound();
+        }
+
+        bool operator==(const iterator& rhs) const {
+            return (rhs.delta == delta && rhs.v == v);
+        }
+        bool operator==(const const_iterator& rhs) const {
+            return (rhs.delta == delta && rhs.v == v);
+        }
+
+        bool operator!=(const iterator& rhs) const {
+            return !(rhs.delta == delta && rhs.v == v);
+        }
+        bool operator!=(const const_iterator& rhs) const {
+            return !(rhs.delta == delta && rhs.v == v);
+        }
     };
     /**
      * returns an iterator to the beginning.
      */
-    iterator begin() {}
-    const_iterator cbegin() const {}
+    iterator begin() { return iterator(this); }
+    const_iterator cbegin() const { return const_iterator(this); }
     /**
      * returns an iterator to the end.
      */
-    iterator end() {}
-    const_iterator cend() const {}
+    iterator end() { return iterator(this, r_size, false); }
+    const_iterator cend() const { return const_iterator(this, r_size, false); }
 
+    //* Create and Delete.
     vector() : r_capacity(__INIT_CAPACITY__), r_size(0), container(new T[r_capacity]) { return; }
     vector(size_t init_size) {
         int size = 8;
@@ -207,14 +412,23 @@ public:
      * adds an element to the end.
      */
     void push_back(const T& value) {
-        if(r_size==r_capacity-1){
+        if (r_size == r_capacity - 1) {
             //full
-            
         }
     }
-    void enlarge(){
-        //auto enlarge the space.
-        for()
+    void enlarge() {
+        //enlarge the space.
+        T* temp = new T[r_capacity << 1];
+        memcpy(temp, container, r_capacity);
+        delete[] container;
+        container = temp;
+        r_capacity <<= 1;
+    }
+    void shrink() {
+        //shrink the space.
+        if (r_size * 2 >= r_capacity)
+            return;
+        //TODO
     }
     /**
      * remove the last element from the end.
