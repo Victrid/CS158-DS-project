@@ -358,7 +358,7 @@ public:
 
     //destroyer
     ~vector() {
-        free(container);
+        delete[] container;
     }
 
     //Assignment. using equal to avoid directly copying from
@@ -378,7 +378,7 @@ public:
             //reallocate to fit the data.
             r_capacity = other.capacity();
             r_size     = other.size();
-            free(container);
+            delete[] container;
             container = (T*)malloc(sizeof(T) * r_capacity);
             memset(container, 0, sizeof(T) * r_capacity);
             for (size_t i = 0; i < r_size; i++)
@@ -433,7 +433,7 @@ public:
         }
         if (pos.legal) {
             for (size_t i = 0; i < r_size - pos.delta; i++)
-                *(pos + r_size - i) = *(pos + r_size - i - 1);
+                *(container + r_size - i) = *(container + r_size - i - 1);
             *pos = value;
             r_size++;
             return pos;
@@ -457,7 +457,7 @@ public:
             // forbid vector.end() deletion.
             throw index_out_of_bound();
         for (size_t i = 0; i < r_size - pos.delta - 1; i++)
-            *pos = *(&*pos + 1);
+            *(container + pos.delta + i) = *(container + pos.delta + i + 1);
         r_size--;
         return pos;
     }
@@ -481,7 +481,7 @@ public:
         memset(temp, 0, sizeof(T) * r_capacity << 1);
         for (size_t i = 0; i < r_size; i++)
             temp[i] = container[i];
-        free(container);
+        delete[] container;
         container = temp;
         r_capacity <<= 1;
     }
@@ -498,7 +498,7 @@ public:
         memset(temp_container, 0, sizeof(T) * temp);
         for (size_t i = 0; i < r_size; i++)
             temp_container[i] = container[i];
-        free(container);
+        delete[] container;
         container  = temp_container;
         r_capacity = temp;
         return;
