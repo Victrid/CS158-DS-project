@@ -13,23 +13,20 @@ using std::memcpy;
 #define __INCREASE_SIZE__ 2
 
 namespace sjtu {
-/**
- * a data container like std::vector
- * store data in a successive memory and support random access.
- */
+//like std::vector.
 template <typename T>
 class vector {
     //Give access to fast data processing between vectors.
     friend class vector;
 
 private:
-    //structure:
+    //* Main Structure:
     //[0 1 2 3 4 5 6 7*] A 8-pr vector
     // ^-----------^.......serve as data section.
     //               ^.....serve as the full-vector flag.
     //           ^.........r_size==(5-0):the current end index.
 
-    // capacity and size. Distinguished with option works.
+    //Distinguished with option works.
     size_t r_capacity;
     // Data Container
     T* container;
@@ -59,7 +56,7 @@ public:
         //useful initiators.
         iterator(vector<T>* vec) : v(vec), delta(0), legal(true){};
         iterator(vector<T>* vec, size_t dlt) : v(vec), delta(dlt) {
-            // legal for data access 
+            // legal for data access
             if (dlt == vec->r_size)
                 legal = false;
             else
@@ -102,6 +99,7 @@ public:
             delta += n;
             return *this;
         }
+        //conjunctive
         iterator& operator-=(const int& n) {
             return *this += (-n);
         }
@@ -182,7 +180,7 @@ public:
             return !(rhs.delta == delta && rhs.v == v);
         }
     };
-
+    //Just nearly the same, with specific access control modified.
     class const_iterator {
         friend class vector;
 
@@ -191,7 +189,7 @@ public:
         size_t delta;
 
     public:
-        //legal for data access indicator
+        //* EXTRA COMMENT Cf. class iterator.
         bool legal;
         const_iterator() : v(nullptr), delta(0), legal(false){};
 
@@ -203,10 +201,7 @@ public:
 
         const_iterator(const vector<T>* vec) : v(vec), delta(0), legal(true){};
         const_iterator(const vector<T>* vec, size_t dlt, bool le) : v(vec), delta(dlt), legal(le){};
-        /**
-         * return a new iterator which pointer n-next elements
-         * as well as operator-
-         */
+
         const_iterator operator+(const int& n) const {
             // check if bound valid.
             if (delta + n < 0 || delta + n > v->r_size)
@@ -221,8 +216,6 @@ public:
             return *this + (-n);
         }
 
-        // return the distance between two iterators,
-        // if these two iterators point to different vectors, throw invaild_iterator.
         int operator-(const const_iterator& rhs) const {
             if (v != rhs.v)
                 throw invalid_iterator();
@@ -321,61 +314,80 @@ public:
             return !(rhs.delta == delta && rhs.v == v);
         }
     };
+    //itertal access extra-initiator.
     iterator begin() { return iterator(this); }
     const_iterator cbegin() const { return const_iterator(this); }
     iterator end() { return iterator(this, r_size, false); }
     const_iterator cend() const { return const_iterator(this, r_size, false); }
 
     //* Create and Delete.
-    //! MEMCPY may unable to process std::vector!
+    //! MEMCPY may be unable to process std::vector! Using operator= instead.
     //Damn C++! Why not just open a C data-structure course?
+
+    //default initiator.
     vector() : r_capacity(__INIT_CAPACITY__), container((T*)malloc(sizeof(T) * r_capacity)), r_size(0) {
-        //not setting to 0 causing bint error
+        //not setting to 0 is causing bint error.
+        //bint is comparing capacity to assign,
+        //and unprocessed random bint.capacity value causes SIGSEGV.
         memset(container, 0, sizeof(T) * r_capacity);
         return;
     }
+
+    //initating with an init_size.
     vector(size_t init_size) {
-        int size = 8;
+        // for the goodness of memory access,
+        // sizes are fit to 8*2^n.
+        size_t size = __INIT_CAPACITY__;
+        // fitting init_size.
         while (size < init_size)
             size <<= 1;
         r_capacity = size;
         r_size     = 0;
-        container  = malloc(sizeof(T) * r_capacity);
+        container  = (T*)malloc(sizeof(T) * r_capacity);
         memset(container, 0, sizeof(T) * r_capacity);
         return;
     }
+
+    //copy initiator.
     vector(const vector& other) : r_capacity(other.capacity()), container((T*)malloc(sizeof(T) * r_capacity)), r_size(other.size()) {
         memset(container, 0, sizeof(T) * r_capacity);
-        for (int i = 0; i < r_size; i++)
+        for (size_t i = 0; i < r_size; i++)
             container[i] = other.container[i];
         return;
     }
+
+    //destroyer
     ~vector() {
         free(container);
     }
 
+    //Assignment. using equal to avoid directly copying from
+    //memory causing unpredicted errors, such as std::vector error.
     vector& operator=(const vector& other) {
         // avoid self assigning.
         if (&other == this)
             return *this;
         if (r_capacity >= other.capacity()) {
-            //no realloc to save time.
-            for (int i = 0; i < other.size(); i++)
+            //no additional alloc to save time.
+            //I have not add link to shrink().
+            //That should belong to some daemon-level memory saving modules.
+            for (size_t i = 0; i < other.size(); i++)
                 container[i] = other.container[i];
             r_size = other.size();
         } else {
+            //reallocate to fit the data.
             r_capacity = other.capacity();
             r_size     = other.size();
             free(container);
             container = (T*)malloc(sizeof(T) * r_capacity);
             memset(container, 0, sizeof(T) * r_capacity);
-            for (int i = 0; i < r_size; i++)
+            for (size_t i = 0; i < r_size; i++)
                 container[i] = other.container[i];
         }
         return *this;
     }
 
-    // vector.at[index].
+    // vector.at[index] to access as vector[index]? maybe.
     T& at(const size_t& pos) {
         if (pos < 0 || pos >= r_size) {
             throw index_out_of_bound();
@@ -390,6 +402,8 @@ public:
     }
     T& operator[](const size_t& pos) { return at(pos); }
     const T& operator[](const size_t& pos) const { return at(pos); }
+
+    //front and back elements access
     const T& front() const {
         if (r_size == 0)
             throw container_is_empty();
@@ -401,70 +415,61 @@ public:
         return *(container + r_size - 1);
     }
 
+    //check if empty.
     bool empty() const { return r_size == 0; }
+    //size access.
     size_t size() const { return r_size; }
+    //clearing the vector by just reset the head pointer. Save time.
     void clear() { r_size = 0; }
-    /**
-     * inserts value before pos
-     * returns an iterator pointing to the inserted value.
-     */
+
+    //[0 1 2 3 4 5 6]
+    //       ^--------insert():
+    //[0 1 2 9 3 4 5 6]
+    //       ^--------returned iterator.
     iterator insert(iterator pos, const T& value) {
         if (r_size + 1 == r_capacity) {
+            //if vector full of elements.
             enlarge();
         }
         if (pos.legal) {
-            for (int i = 0; i < r_size - pos.delta; i++) {
+            for (size_t i = 0; i < r_size - pos.delta; i++)
                 *(pos + r_size - i) = *(pos + r_size - i - 1);
-            }
             *pos = value;
             r_size++;
             return pos;
         } else {
-            // end position
+            // end position, call push_back.
             push_back(value);
             return pos;
         }
     }
-    /**
-     * inserts value at index ind.
-     * after inserting, this->at(ind) == value
-     * returns an iterator pointing to the inserted value.
-     * throw index_out_of_bound if ind > size (in this situation ind can be size because after inserting the size will increase 1.)
-     */
+    // alias
     iterator insert(const size_t& ind, const T& value) {
         return insert(iterator(*this, ind), value);
     }
-    /**
-     * removes the element at pos.
-     * return an iterator pointing to the following element.
-     * If the iterator pos refers the last element, the end() iterator is returned.
-     */
+
+    //delete selected element and return the next.
     iterator erase(iterator pos) {
         if (r_size == 0)
+            // forbid empty vector access.
             throw container_is_empty();
         if (!pos.legal)
+            // forbid vector.end() deletion.
             throw index_out_of_bound();
-        for (size_t i = 0; i < r_size - pos.delta - 1; i++) {
+        for (size_t i = 0; i < r_size - pos.delta - 1; i++)
             *pos = *(&*pos + 1);
-        }
         r_size--;
         return pos;
     }
-    /**
-     * removes the element with index ind.
-     * return an iterator pointing to the following element.
-     * throw index_out_of_bound if ind >= size
-     */
+    //alias
     iterator erase(const size_t& ind) {
         return erase(iterator(*this, ind));
     }
-    /**
-     * adds an element to the end.
-     */
 
+    //append
     void push_back(const T& value) {
         if (r_size == r_capacity - 1) {
-            //full
+            //if vector full of elements.
             enlarge();
         }
         container[r_size] = value;
@@ -474,23 +479,39 @@ public:
         //enlarge the space.
         T* temp = (T*)malloc(sizeof(T) * r_capacity << 1);
         memset(temp, 0, sizeof(T) * r_capacity << 1);
-        for (int i = 0; i < r_size; i++) {
+        for (size_t i = 0; i < r_size; i++)
             temp[i] = container[i];
-        }
         free(container);
         container = temp;
         r_capacity <<= 1;
     }
-    /**
-     * remove the last element from the end.
-     * throw container_is_empty if size() == 0
-     */
+    void shrink() {
+        //this function is isolated.
+        //forbid extra-capasity shrink.
+        if (r_size * 2 >= r_capacity)
+            return;
+        size_t temp = r_capacity;
+        while (r_size * 2 < temp && temp >= 8)
+            temp >>= 1;
+        temp <<= 1;
+        T* temp_container = (T*)malloc(sizeof(T) * temp);
+        memset(temp_container, 0, sizeof(T) * temp);
+        for (size_t i = 0; i < r_size; i++)
+            temp_container[i] = container[i];
+        free(container);
+        container  = temp_container;
+        r_capacity = temp;
+        return;
+    }
+
+    //remove the last element.
     void pop_back() {
         if (r_size == 0)
             throw container_is_empty();
         else
             r_size--;
     }
+    //return capacity.
     size_t capacity() const {
         return r_capacity;
     }
