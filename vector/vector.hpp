@@ -24,7 +24,7 @@ class vector {
 
 private:
     //structure:
-    //[0 1 2 3 4 5 6 7*]
+    //[0 1 2 3 4 5 6 7*] A 8-pr vector
     // ^-----------^.......serve as data section.
     //               ^.....serve as the full-vector flag.
     //           ^.........r_size==(5-0):the current end index.
@@ -46,17 +46,25 @@ public:
      */
     class const_iterator;
     class iterator {
+        friend class vector;
+
     private:
         vector<T>* v;
         size_t delta;
-        //legal for data access indicator
-        bool legal;
 
     public:
+        //legal for data access indicator
+        bool legal;
         iterator() : v(nullptr), delta(0), legal(false){};
         iterator(iterator& it) : v(it.v), delta(it.delta), legal(it.legal){};
         iterator(const_iterator& it) : v(it.v), delta(it.delta), legal(it.legal){};
         iterator(vector<T>* vec) : v(vec), delta(0), legal(true){};
+        iterator(vector<T>* vec, size_t dlt) : v(vec), delta(dlt) {
+            if (dlt == vec->r_size)
+                legal = false;
+            else
+                legal = true;
+        };
         iterator(vector<T>* vec, size_t dlt, bool le) : v(vec), delta(dlt), legal(le){};
         /**
          * return a new iterator which pointer n-next elements
@@ -178,6 +186,8 @@ public:
     };
 
     class const_iterator {
+        friend class vector;
+
     private:
         vector<T>* v;
         size_t delta;
@@ -388,33 +398,58 @@ public:
      * inserts value before pos
      * returns an iterator pointing to the inserted value.
      */
-    iterator insert(iterator pos, const T& value) {}
+    iterator insert(iterator pos, const T& value) {
+        if (r_size + 1 == r_capacity) {
+            enlarge();
+        }
+        if (pos.legal) {
+            memmove(*(pos + 1), *pos, r_size - pos);
+            *pos = value;
+            return pos;
+        } else {
+            // end position
+            push_back(value);
+            return pos;
+        }
+    }
     /**
      * inserts value at index ind.
      * after inserting, this->at(ind) == value
      * returns an iterator pointing to the inserted value.
      * throw index_out_of_bound if ind > size (in this situation ind can be size because after inserting the size will increase 1.)
      */
-    iterator insert(const size_t& ind, const T& value) {}
+    iterator insert(const size_t& ind, const T& value) {
+        return insert(iterator(*this, ind), value);
+    }
     /**
      * removes the element at pos.
      * return an iterator pointing to the following element.
      * If the iterator pos refers the last element, the end() iterator is returned.
      */
-    iterator erase(iterator pos) {}
+    iterator erase(iterator pos) {
+        if (!pos.legal)
+            throw index_out_of_bound();
+        memmove(*pos, *pos + 1, r_size - pos.delta - 1);
+        return pos;
+    }
     /**
      * removes the element with index ind.
      * return an iterator pointing to the following element.
      * throw index_out_of_bound if ind >= size
      */
-    iterator erase(const size_t& ind) {}
+    iterator erase(const size_t& ind) {
+        return erase(iterator(*this, ind));
+    }
     /**
      * adds an element to the end.
      */
     void push_back(const T& value) {
         if (r_size == r_capacity - 1) {
             //full
+            enlarge();
         }
+        container[r_size] = value;
+        r_size++;
     }
     void enlarge() {
         //enlarge the space.
@@ -426,7 +461,7 @@ public:
     }
     void shrink() {
         //shrink the space.
-        if (r_size * 2 >= r_capacity)
+        if ((r_size + 1) * 2 >= r_capacity)
             return;
         //TODO
     }
