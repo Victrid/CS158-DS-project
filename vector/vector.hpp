@@ -325,11 +325,17 @@ public:
     //Damn C++! Why not just open a C data-structure course?
 
     //default initiator.
-    vector() : r_capacity(__INIT_CAPACITY__), container((T*)malloc(sizeof(T) * r_capacity)), r_size(0) {
+    vector() : r_capacity(__INIT_CAPACITY__), container((T*)operator new[](sizeof(T) * r_capacity)), r_size(0) {
+        //this is malloc's error. Malloc causes unpredicted memory leak.
+        //reuse operator new[] instead.
+        //Cf. https://zh.cppreference.com/w/cpp/memory/new/operator_new
+        //That's interesting... I'm too weak (._.)rz
+        //RENEW: I found errors not fit but passing the test.
+        //now changed.
+        //-------------obsolete----------------
         //not setting to 0 is causing bint error.
         //bint is comparing capacity to assign,
         //and unprocessed random bint.capacity value causes SIGSEGV.
-        memset(container, 0, sizeof(T) * r_capacity);
         return;
     }
 
@@ -343,22 +349,22 @@ public:
             size <<= 1;
         r_capacity = size;
         r_size     = 0;
-        container  = (T*)malloc(sizeof(T) * r_capacity);
-        memset(container, 0, sizeof(T) * r_capacity);
+        container  = (T*)operator new[](sizeof(T) * r_capacity);
         return;
     }
 
     //copy initiator.
-    vector(const vector& other) : r_capacity(other.capacity()), container((T*)malloc(sizeof(T) * r_capacity)), r_size(other.size()) {
-        memset(container, 0, sizeof(T) * r_capacity);
+    vector(const vector& other) : r_capacity(other.capacity()), container((T*)operator new[](sizeof(T) * r_capacity)), r_size(other.size()) {
         for (size_t i = 0; i < r_size; i++)
-            container[i] = other.container[i];
+            new(container+i) T(other.container[i]);
         return;
     }
 
     //destroyer
     ~vector() {
-        delete[] container;
+        for (size_t i = 0; i < r_size; i++)
+            container[i].~T();
+        operator delete[](container, r_capacity * sizeof(T));
     }
 
     //Assignment. using equal to avoid directly copying from
@@ -376,13 +382,15 @@ public:
             r_size = other.size();
         } else {
             //reallocate to fit the data.
+
+            for (size_t i = 0; i < r_size; i++)
+                container[i].~T();
+            operator delete[](container, r_capacity * sizeof(T));
             r_capacity = other.capacity();
             r_size     = other.size();
-            delete[] container;
-            container = (T*)malloc(sizeof(T) * r_capacity);
-            memset(container, 0, sizeof(T) * r_capacity);
+            container  = (T*)operator new[](sizeof(T) * r_capacity);
             for (size_t i = 0; i < r_size; i++)
-                container[i] = other.container[i];
+                new(container+i) T(other.container[i]);
         }
         return *this;
     }
@@ -419,8 +427,13 @@ public:
     bool empty() const { return r_size == 0; }
     //size access.
     size_t size() const { return r_size; }
-    //clearing the vector by just reset the head pointer. Save time.
-    void clear() { r_size = 0; }
+    //Damn. No time shall be saved.
+    void clear() {
+        for (size_t i = 0; i < r_size; i++) {
+            container[i].~T();
+        }
+        r_size = 0;
+    }
 
     //[0 1 2 3 4 5 6]
     //       ^--------insert():
@@ -458,7 +471,7 @@ public:
             throw index_out_of_bound();
         for (size_t i = 0; i < r_size - pos.delta - 1; i++)
             *(container + pos.delta + i) = *(container + pos.delta + i + 1);
-        r_size--;
+        container[--r_size].~T();
         return pos;
     }
     //alias
@@ -472,16 +485,21 @@ public:
             //if vector full of elements.
             enlarge();
         }
-        container[r_size] = value;
+        //Cf. https://blog.csdn.net/wudaijun/article/details/9273339
+        //THAT'S MAGIC
+        new (container + r_size) T(value);
         r_size++;
     }
     void enlarge() {
         //enlarge the space.
-        T* temp = (T*)malloc(sizeof(T) * r_capacity << 1);
-        memset(temp, 0, sizeof(T) * r_capacity << 1);
-        for (size_t i = 0; i < r_size; i++)
-            temp[i] = container[i];
-        delete[] container;
+        T* temp = (T*)operator new[](sizeof(T) * r_capacity << 1);
+        for (size_t i = 0; i < r_size; i++) {
+            new(temp+i) T(container[i]);
+            //After malloc should destroy separately.
+            //Cf. https://www.cnblogs.com/jobshunter/p/10976308.html
+            container[i].~T();
+        }
+        operator delete[](container, r_capacity * sizeof(T));
         container = temp;
         r_capacity <<= 1;
     }
@@ -494,11 +512,12 @@ public:
         while (r_size * 2 < temp && temp >= 8)
             temp >>= 1;
         temp <<= 1;
-        T* temp_container = (T*)malloc(sizeof(T) * temp);
-        memset(temp_container, 0, sizeof(T) * temp);
-        for (size_t i = 0; i < r_size; i++)
-            temp_container[i] = container[i];
-        delete[] container;
+        T* temp_container = (T*)operator new[](sizeof(T) * temp);
+        for (size_t i = 0; i < r_size; i++) {
+            new(temp_container+i) T(container[i]);
+            container[i].~T();
+        }
+        operator delete[](container, r_capacity * sizeof(T));
         container  = temp_container;
         r_capacity = temp;
         return;
@@ -509,7 +528,7 @@ public:
         if (r_size == 0)
             throw container_is_empty();
         else
-            r_size--;
+            container[--r_size].~T();
     }
     //return capacity.
     size_t capacity() const {
