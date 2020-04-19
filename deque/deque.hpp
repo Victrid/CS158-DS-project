@@ -366,7 +366,7 @@ public:
     ~vector() {
         for (size_t i = 0; i < r_size; i++)
             container[i].~T();
-        operator delete[](container, r_capacity * sizeof(T));
+        operator delete[](container);
     }
 
     //Assignment. using equal to avoid directly copying from
@@ -387,7 +387,7 @@ public:
 
             for (size_t i = 0; i < r_size; i++)
                 container[i].~T();
-            operator delete[](container, r_capacity * sizeof(T));
+            operator delete[](container);
             r_capacity = other.capacity();
             r_size     = other.size();
             container  = (T*)operator new[](sizeof(T) * r_capacity);
@@ -420,6 +420,16 @@ public:
         return *container;
     }
     const T& back() const {
+        if (r_size == 0)
+            throw container_is_empty();
+        return *(container + r_size - 1);
+    }
+    T& o_front() {
+        if (r_size == 0)
+            throw container_is_empty();
+        return *container;
+    }
+    T& o_back() {
         if (r_size == 0)
             throw container_is_empty();
         return *(container + r_size - 1);
@@ -460,7 +470,7 @@ public:
     }
     // alias
     iterator insert(const size_t& ind, const T& value) {
-        return insert(iterator(*this, ind), value);
+        return insert(iterator(this, ind), value);
     }
 
     //delete selected element and return the next.
@@ -478,7 +488,7 @@ public:
     }
     //alias
     iterator erase(const size_t& ind) {
-        return erase(iterator(*this, ind));
+        return erase(iterator(this, ind));
     }
 
     //append
@@ -501,7 +511,7 @@ public:
             //Cf. https://www.cnblogs.com/jobshunter/p/10976308.html
             container[i].~T();
         }
-        operator delete[](container, r_capacity * sizeof(T));
+        operator delete[](container);
         container = temp;
         r_capacity <<= 1;
     }
@@ -519,7 +529,7 @@ public:
             new (temp_container + i) T(container[i]);
             container[i].~T();
         }
-        operator delete[](container, r_capacity * sizeof(T));
+        operator delete[](container);
         container  = temp_container;
         r_capacity = temp;
         return;
@@ -556,7 +566,7 @@ private:
         if (pos > d_size)
             throw(index_out_of_bound());
         if (pos == d_size) {
-            return d_index{0, container.size(), container.back.size() + 1};
+            return d_index{0, container.size(), container.back().size() + 1};
         }
         d_index ans{1, 0, 0};
         int sp = 0;
@@ -615,10 +625,10 @@ public:
          * as well as operator-
          */
         iterator operator+(const int& n) const {
-            return iterator(this, delta + n);
+            return iterator(deq, delta + n);
         }
         iterator operator-(const int& n) const {
-            return iterator(this, delta - n);
+            return iterator(deq, delta - n);
         }
         // return th distance between two iterator,
         // if these two iterators points to different vectors, throw invaild_iterator.
@@ -666,13 +676,13 @@ public:
          * TODO *it
          */
         T& operator*() const {
-            return deq[delta];
+            return (*deq)[delta];
         }
         /**
          * TODO it->field
          */
         T* operator->() const noexcept {
-            return &deq[delta];
+            return &(*deq)[delta];
         }
         /**
          * a operator to check whether two iterators are same (pointing to the same memory).
@@ -703,10 +713,10 @@ public:
         const_iterator(const const_iterator& other) : deq(other.deq), delta(other.delta){};
         const_iterator(const iterator& other) : deq(other.deq), delta(other.delta){};
         const_iterator operator+(const int& n) const {
-            return const_iterator(this, delta + n);
+            return const_iterator(deq, delta + n);
         }
         const_iterator operator-(const int& n) const {
-            return const_iterator(this, delta - n);
+            return const_iterator(deq, delta - n);
         }
         // return th distance between two iterator,
         // if these two iterators points to different vectors, throw invaild_iterator.
@@ -769,7 +779,7 @@ public:
     }
     ~deque() {}
     deque& operator=(const deque& other) {
-        if (*other == this)
+        if (&other == this)
             return *this;
         container = other.container;
         d_size    = other.d_size;
@@ -820,13 +830,21 @@ public:
     /**
      * returns an iterator to the beginning.
      */
-    iterator begin() {}
-    const_iterator cbegin() const {}
+    iterator begin() {
+        return iterator(this, 0);
+    }
+    const_iterator cbegin() const {
+        return const_iterator(this, 0);
+    }
     /**
      * returns an iterator to the end.
      */
-    iterator end() {}
-    const_iterator cend() const {}
+    iterator end() {
+        return iterator(this, d_size);
+    }
+    const_iterator cend() const {
+        return const_iterator(this, d_size);
+    }
     /**
      * checks whether the container is empty.
      */
@@ -888,7 +906,7 @@ public:
      * adds an element to the end
      */
     void push_back(const T& value) {
-        container.back().push_back(value);
+        container.o_back().push_back(value);
     }
     /**
      * removes the last element
@@ -898,14 +916,14 @@ public:
         if (d_size == 0)
             throw(container_is_empty());
         remove_empty_block();
-        container.back().pop_back();
+        container.o_back().pop_back();
     }
     /**
      * inserts an element to the beginning.
      */
     void push_front(const T& value) {
         //* d2 split within
-        container.front().insert(0, value);
+        container.o_front().insert(0, value);
     }
     /**
      * removes the first element.
@@ -915,7 +933,7 @@ public:
         if (d_size == 0)
             throw(container_is_empty());
         remove_empty_block();
-        container.front().erase(0);
+        container.o_front().erase(0);
     }
 };
 
