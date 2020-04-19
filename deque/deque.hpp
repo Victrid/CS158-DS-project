@@ -570,27 +570,26 @@ private:
         }
         d_index ans{1, 0, 0};
         int sp = 0;
-        while (sp < pos) {
+        while (sp <= pos) {
             sp += container[ans.block].size();
             ++ans.block;
         }
-        sp -= container[ans.block].size();
         ans.block--;
+        sp -= container[ans.block].size();
         ans.subpos = pos - sp;
         return ans;
     };
     // the function does what you think.
     void split(typename vector<vector<T>>::iterator it) {
         size_t _s = (*it).size() / 2;
-        vector<T> back(_s);
-        container.insert(it + 1, back(_s));
-        for (auto ps = (*it).begin() + ((*it).size() - _s); ps != (*it).end(); ps = (*it).erase(ps))
-            *(it + 1).push_back(*ps);
+        container.insert(it + 1, vector<T>(_s));
+        for (auto ps = (*it).begin() + ((*it).size() - _s); ps != (*it).end(); (*it).erase(ps))
+            (*(it + 1)).push_back(*ps);
         return;
     }
     // merge it and it+1 UNSAFE
     void merge(typename vector<vector<T>>::iterator it) {
-        for (auto ps = *(it + 1).begin(); ps != *(it + 1).end(); ps = *(it + 1).erase(ps))
+        for (auto ps = (*(it + 1)).begin(); ps != (*(it + 1)).end(); (*(it + 1)).erase(ps))
             (*it).push_back(*ps);
         container.erase(it + 1);
         return;
@@ -607,7 +606,21 @@ private:
         return;
     }
     //TODO fit function
-    void fit(){};
+    void fit() {
+        remove_empty_block();
+        for (auto ps = container.begin(); ps != container.end();) {
+            if ((*ps).size() * (*ps).size() > 4 * d_size) {
+                split(ps);
+                continue;
+            } else if (ps + 1 != container.end() && (*ps).size() * (*ps).size() * 4 < d_size) {
+                merge(ps);
+                continue;
+            } else {
+                ps++;
+            }
+        }
+        return;
+    };
 
 public:
     class const_iterator;
@@ -772,15 +785,14 @@ public:
     };
 
     deque() : d_size(0) {}
-    deque(const deque& other) {
-        container = other.container;
-        d_size    = other.d_size;
+    deque(const deque& other) : container(other.container), d_size(other.d_size) {
         fit();
     }
     ~deque() {}
     deque& operator=(const deque& other) {
         if (&other == this)
             return *this;
+        container.clear();
         container = other.container;
         d_size    = other.d_size;
         fit();
@@ -863,7 +875,7 @@ public:
     void clear() {
         if (d_size == 0)
             return;
-        container.clear;
+        container.clear();
         d_size = 0;
         return;
     }
@@ -878,11 +890,13 @@ public:
             throw(invalid_iterator());
         if (pos.delta == d_size) {
             push_back(value);
+            d_size++;
             return pos;
         }
         //* optimize i0
         d_index d = query(pos.delta);
         container[d.block].insert(d.subpos, value);
+        d_size++;
         return pos;
     }
     /**
@@ -900,13 +914,19 @@ public:
         d_index d = query(pos.delta);
         container[d.block].erase(d.subpos);
         //* d1 whether it should clear empty here?
+        d_size--;
         return pos;
     }
     /**
      * adds an element to the end
      */
     void push_back(const T& value) {
+        if (d_size == 0) {
+            container.push_back(vector<T>());
+        }
         container.o_back().push_back(value);
+        d_size++;
+        return;
     }
     /**
      * removes the last element
@@ -917,13 +937,20 @@ public:
             throw(container_is_empty());
         remove_empty_block();
         container.o_back().pop_back();
+        d_size--;
+        return;
     }
     /**
      * inserts an element to the beginning.
      */
     void push_front(const T& value) {
         //* d2 split within
+        if (d_size == 0) {
+            container.push_back(vector<T>());
+        }
         container.o_front().insert(0, value);
+        d_size++;
+        return;
     }
     /**
      * removes the first element.
@@ -934,6 +961,8 @@ public:
             throw(container_is_empty());
         remove_empty_block();
         container.o_front().erase(0);
+        d_size--;
+        return;
     }
 };
 
