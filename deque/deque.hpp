@@ -6,7 +6,7 @@
 #include <cstddef>
 
 #ifndef __CHUCKSIZE__
-#define __CHUCKSIZE__ 64
+#define __CHUCKSIZE__ 256
 #endif
 
 #ifndef __CHECKVALVE__
