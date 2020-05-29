@@ -25,7 +25,7 @@ private:
         friend class iterator;
         friend class const_iterator;
 
-    protected:
+    public:
         /*
         * struct type_avl
         * used as a key-value 
