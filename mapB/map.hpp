@@ -342,6 +342,9 @@ private:
         bool exist(type_avl dat) const {
             return (__query_trav_(__data, dat) != nullptr);
         }
+        bool exist(Key K) const {
+            return (__query_trav_(__data, K) != nullptr);
+        }
         //erase
         int erase(type_avl dat) {
             if (__query_trav_(__data, dat) == nullptr)
@@ -388,14 +391,18 @@ public:
      */
     class const_iterator;
     class iterator {
+        friend class map;
+
     private:
         map<Key, T, Compare>* mathis;
         Key* key;
+        //0: start-1, 1 end
         bool endflag;
 
     public:
         iterator() : mathis(nullptr), key(nullptr), endflag(true) {}
         iterator(map<Key, T, Compare>* mathis, Key nodes) : mathis(mathis), key(new Key(nodes)), endflag(false){};
+        iterator(map<Key, T, Compare>* mathis, Key nodes, bool endf) : mathis(mathis), key(new Key(nodes)), endflag(endf){};
         iterator(const iterator& other) : mathis(other.mathis), key(new Key(*other.key)) {}
         iterator(const const_iterator& other) : mathis(other.mathis), key(new Key(*other.key)) {}
         iterator operator++(int) {
@@ -409,7 +416,8 @@ public:
             typename AVL::node* nodesa = mathis->tree._next_key_(*key);
             if (nodesa == nullptr) {
                 delete key;
-                key = nullptr;
+                key     = nullptr;
+                endflag = 1;
             }
             return *this;
         }
@@ -424,52 +432,61 @@ public:
             typename AVL::node* nodesa = mathis->tree._previous_key_(*key);
             if (nodesa == nullptr) {
                 delete key;
-                key = nullptr;
+                key     = nullptr;
+                endflag = 0;
             }
             return *this;
         }
         value_type& operator*() const {
-            if (nodes == nullptr || mathis == nullptr)
+            if (key == nullptr || mathis == nullptr)
                 throw index_out_of_bound();
-            return value_type(nodes->value.__index, nodes->value.__value);
+            return value_type(&key, mathis->at(&key));
         }
         bool operator==(const iterator& rhs) const {
-            return (nodes == rhs.nodes);
+            return (Compare().equiv(&key, &(rhs.key)));
         }
         bool operator==(const const_iterator& rhs) const {
-            return (nodes == rhs.nodes);
+            return (Compare().equiv(&key, &(rhs.key)));
         }
         bool operator!=(const iterator& rhs) const {
-            return (nodes != rhs.nodes);
+            return (!Compare().equiv(&key, &(rhs.key)));
         }
         bool operator!=(const const_iterator& rhs) const {
-            return (nodes != rhs.nodes);
+            return (!Compare().equiv(&key, &(rhs.key)));
         }
         value_type* operator->() const noexcept {
             return &*(*this);
         }
     };
     class const_iterator {
-        // it should has similar member method as iterator.
-        //  and it should be able to construct from an iterator.
+        friend class map;
+
     private:
         const map<Key, T, Compare>* mathis;
-        typename AVL::node* nodes;
+        Key* key;
+        //0: start-1, 1 end
+        bool endflag;
 
     public:
-        const_iterator() : mathis(nullptr), nodes(nullptr) {}
-        const_iterator(map<Key, T, Compare>* map, typename AVL::node* nodes) : mathis(map), nodes(nodes) {}
-        const_iterator(const iterator& other) : mathis(other.mathis), nodes(other.nodes) {}
-        const_iterator(const const_iterator& other) : mathis(other.mathis), nodes(other.nodes) {}
+        const_iterator() : mathis(nullptr), key(nullptr), endflag(true) {}
+        const_iterator(map<Key, T, Compare>* mathis, Key nodes) : mathis(mathis), key(new Key(nodes)), endflag(false){};
+        const_iterator(map<Key, T, Compare>* mathis, Key nodes, bool endf) : mathis(mathis), key(new Key(nodes)), endflag(endf){};
+        const_iterator(const iterator& other) : mathis(other.mathis), key(new Key(*other.key)) {}
+        const_iterator(const const_iterator& other) : mathis(other.mathis), key(new Key(*other.key)) {}
         const_iterator operator++(int) {
             const_iterator it(*this);
             ++*this;
             return it;
         }
         const_iterator& operator++() {
-            if (nodes == nullptr || mathis == nullptr)
+            if (key == nullptr || mathis == nullptr)
                 throw invalid_iterator();
-            nodes = mathis->tree._next_node(nodes);
+            auto nodesa = mathis->tree._next_key_(*key);
+            if (nodesa == nullptr) {
+                delete key;
+                key     = nullptr;
+                endflag = 1;
+            }
             return *this;
         }
         const_iterator operator--(int) {
@@ -480,28 +497,35 @@ public:
         const_iterator& operator--() {
             if (mathis == nullptr)
                 throw invalid_iterator();
-            nodes = mathis->tree._last_node(nodes);
+            auto nodesa = mathis->tree._previous_key_(*key);
+            if (nodesa == nullptr) {
+                delete key;
+                key     = nullptr;
+                endflag = 0;
+            }
             return *this;
         }
         const value_type& operator*() const {
-            if (nodes == nullptr || mathis == nullptr)
+            if (key == nullptr || mathis == nullptr)
                 throw index_out_of_bound();
-            return value_type(nodes->value.__index, nodes->value.__value);
+            return value_type(&key, mathis->at(&key));
         }
         bool operator==(const iterator& rhs) const {
-            return (nodes == rhs.nodes);
+            return (Compare().equiv(&key, &(rhs.key)));
         }
         bool operator==(const const_iterator& rhs) const {
-            return (nodes == rhs.nodes);
+            return (Compare().equiv(&key, &(rhs.key)));
         }
         bool operator!=(const iterator& rhs) const {
-            return (nodes != rhs.nodes);
+            return (!Compare().equiv(&key, &(rhs.key)));
         }
         bool operator!=(const const_iterator& rhs) const {
-            return (nodes != rhs.nodes);
+            return (!Compare().equiv(&key, &(rhs.key)));
         }
         value_type* operator->() const noexcept { return &*(*this); }
     };
+    friend class const_iterator;
+    friend class iterator;
     map() : tree() {}
     map(const map& other) : tree(other.tree) {}
     /**
@@ -529,15 +553,11 @@ public:
     const_iterator cbegin() const {
         return const_iterator(this, tree._first());
     }
-    /**
-     * return a iterator to the end
-     * in fact, it returns past-the-end.
-     */
     iterator end() {
-        return iterator(this, nullptr);
+        return iterator(this, nullptr, true);
     }
     const_iterator cend() const {
-        return const_iterator(this, nullptr);
+        return const_iterator(this, nullptr, true);
     }
     /**
      * checks whether the container is empty
@@ -576,7 +596,15 @@ public:
      *
      * throw if pos pointed to a bad element (pos == this->end() || pos points an element out of this)
      */
-    void erase(iterator pos) {}
+    void erase(iterator pos) {
+        if (pos.key == nullptr)
+            throw invalid_iterator();
+        try {
+            tree.erase(&pos.key);
+        } catch (...) {
+            throw invalid_iterator();
+        }
+    }
     /**
      * Returns the number of elements with key
      *   that compares equivalent to the specified argument,
@@ -584,15 +612,30 @@ public:
      *     since this container does not allow duplicates.
      * The default method of check the equivalence is !(a < b || b > a)
      */
-    size_t count(const Key& key) const {}
+    size_t count(const Key& key) const {
+        return tree.exist(key);
+    }
     /**
      * Finds an element with key equivalent to key.
      * key value of the element to search for.
      * Iterator to an element with key equivalent to key.
      *   If no such element is found, past-the-end (see end()) iterator is returned.
      */
-    iterator find(const Key& key) {}
-    const_iterator find(const Key& key) const {}
+    iterator find(const Key& key) {
+        if (tree[key].nod != nullptr) {
+            return iterator(this, tree[key].nod);
+        } else {
+            return end();
+        }
+    }
+    const_iterator find(const Key& key) const {
+        auto n = tree[key].nod;
+        if (n != nullptr) {
+            return const_iterator(this, n);
+        } else {
+            return cend();
+        }
+    }
 };
 
 } // namespace sjtu
