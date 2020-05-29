@@ -424,21 +424,29 @@ public:
         iterator(const iterator& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         iterator(const const_iterator& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         iterator(const iterator&& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         iterator(const const_iterator&& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         ~iterator() {
@@ -452,7 +460,7 @@ public:
             mathis = it.mathis;
             if (key != nullptr)
                 delete key;
-            key     = it.key;
+            key     = new Key(*it.key);
             endflag = it.endflag;
             return *this;
         }
@@ -469,6 +477,9 @@ public:
                 delete key;
                 key     = nullptr;
                 endflag = 1;
+            } else {
+                delete key;
+                key = new Key(nodesa->value.first);
             }
             return *this;
         }
@@ -480,11 +491,21 @@ public:
         iterator& operator--() {
             if (mathis == nullptr)
                 throw invalid_iterator();
-            auto nodesa = mathis->tree._previous_key(*key);
+            typename AVL::node* nodesa;
+            if (key == nullptr && endflag != 1) {
+                throw invalid_iterator();
+            }else if(endflag == 1){
+                nodesa = mathis->tree._last();
+            }else{
+                nodesa = mathis->tree._previous_key(*key);
+            }
             if (nodesa == nullptr) {
                 delete key;
                 key     = nullptr;
                 endflag = 0;
+            } else {
+                delete key;
+                key = new Key(nodesa->value.first);
             }
             return *this;
         }
@@ -494,35 +515,27 @@ public:
             return mathis->tree._find(*key)->value;
         }
         bool operator==(const iterator& rhs) const {
-            if ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key))) {
-                return true;
-            } else {
-                return false;
-            }
+            if(key==nullptr || rhs.key==nullptr)
+                return (key==rhs.key);
+            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator==(const const_iterator& rhs) const {
-            if ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key))) {
-                return true;
-            } else {
-                return false;
-            }
+            if(key==nullptr || rhs.key==nullptr)
+                return (key==rhs.key);
+            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const iterator& rhs) const {
-            if ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key))) {
-                return false;
-            } else {
-                return true;
-            }
+            if(key==nullptr || rhs.key==nullptr)
+                return !(key==rhs.key);
+            (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
         }
         bool operator!=(const const_iterator& rhs) const {
-            if ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key))) {
-                return false;
-            } else {
-                return true;
-            }
+            if(key==nullptr || rhs.key==nullptr)
+                return !(key==rhs.key);
+            return (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
         }
         value_type* operator->() const noexcept {
-            return new value_type(*(*this));
+            return &*(*this);
         }
     };
     class const_iterator {
@@ -543,21 +556,29 @@ public:
         const_iterator(const iterator& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         const_iterator(const const_iterator& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         const_iterator(const iterator&& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         const_iterator(const const_iterator&& other) : mathis(other.mathis), endflag(other.endflag) {
             if (other.key != nullptr) {
                 key = new Key(*other.key);
+            } else {
+                key = nullptr;
             }
         }
         ~const_iterator() {
@@ -571,7 +592,7 @@ public:
             mathis = it.mathis;
             if (key != nullptr)
                 delete key;
-            key     = it.key;
+            key     = new Key(*it.key);
             endflag = it.endflag;
             return *this;
         }
@@ -588,6 +609,9 @@ public:
                 delete key;
                 key     = nullptr;
                 endflag = 1;
+            } else {
+                delete key;
+                key = new Key(nodesa->value.first);
             }
             return *this;
         }
@@ -599,11 +623,21 @@ public:
         const_iterator& operator--() {
             if (mathis == nullptr)
                 throw invalid_iterator();
-            auto nodesa = mathis->tree._previous_key(*key);
+            typename AVL::node* nodesa;
+            if (key == nullptr && endflag != 1) {
+                throw invalid_iterator();
+            }else if(endflag == 1){
+                nodesa = mathis->tree._last();
+            }else{
+                nodesa = mathis->tree._previous_key(*key);
+            }
             if (nodesa == nullptr) {
                 delete key;
                 key     = nullptr;
                 endflag = 0;
+            } else {
+                delete key;
+                key = new Key(nodesa->value.first);
             }
             return *this;
         }
@@ -613,15 +647,23 @@ public:
             return mathis->tree._find(*key)->value;
         }
         bool operator==(const iterator& rhs) const {
+            if(key==nullptr || rhs.key==nullptr)
+                return (key==rhs.key);
             return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator==(const const_iterator& rhs) const {
+            if(key==nullptr || rhs.key==nullptr)
+                return (key==rhs.key);
             return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const iterator& rhs) const {
+            if(key==nullptr || rhs.key==nullptr)
+                return !(key==rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const const_iterator& rhs) const {
+            if(key==nullptr || rhs.key==nullptr)
+                return !(key==rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         const value_type* operator->() const noexcept { return &*(*this); }
@@ -700,7 +742,16 @@ public:
      *
      * throw if pos pointed to a bad element (pos == this->end() || pos points an element out of this)
      */
-    void erase(iterator pos) {
+    void erase(iterator& pos) {
+        if (pos.key == nullptr)
+            throw invalid_iterator();
+        try {
+            tree.erase(*(pos.key));
+        } catch (...) {
+            throw invalid_iterator();
+        }
+    }
+    void erase(iterator&& pos) {
         if (pos.key == nullptr)
             throw invalid_iterator();
         try {
