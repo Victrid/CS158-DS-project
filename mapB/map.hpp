@@ -164,7 +164,7 @@ private:
         node* __query_trav_big_(node* root, Key& to_query) const {
             if (root == nullptr)
                 return nullptr;
-            if (Compare()(to_query, root->value.first)) {
+            if (!Compare()(root->value.first, to_query)) {
                 return __query_trav_(root->right, to_query);
             } else {
                 if (root->left == nullptr)
@@ -177,7 +177,7 @@ private:
         node* __query_trav_small_(node* root, Key& to_query) const {
             if (root == nullptr)
                 return nullptr;
-            if (Compare()(to_query, root->value.first)) {
+            if (!Compare()(to_query, root->value.first)) {
                 return __query_trav_(root->left, to_query);
             } else {
                 if (root->right == nullptr)
@@ -494,9 +494,9 @@ public:
             typename AVL::node* nodesa;
             if (key == nullptr && endflag != 1) {
                 throw invalid_iterator();
-            }else if(endflag == 1){
+            } else if (endflag == 1) {
                 nodesa = mathis->tree._last();
-            }else{
+            } else {
                 nodesa = mathis->tree._previous_key(*key);
             }
             if (nodesa == nullptr) {
@@ -515,23 +515,23 @@ public:
             return mathis->tree._find(*key)->value;
         }
         bool operator==(const iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return (key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return (key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator==(const const_iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return (key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return (key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return !(key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return !(key == rhs.key);
             (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
         }
         bool operator!=(const const_iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return !(key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return !(key == rhs.key);
             return (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
         }
         value_type* operator->() const noexcept {
@@ -626,9 +626,9 @@ public:
             typename AVL::node* nodesa;
             if (key == nullptr && endflag != 1) {
                 throw invalid_iterator();
-            }else if(endflag == 1){
+            } else if (endflag == 1) {
                 nodesa = mathis->tree._last();
-            }else{
+            } else {
                 nodesa = mathis->tree._previous_key(*key);
             }
             if (nodesa == nullptr) {
@@ -647,23 +647,23 @@ public:
             return mathis->tree._find(*key)->value;
         }
         bool operator==(const iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return (key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return (key == rhs.key);
             return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator==(const const_iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return (key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return (key == rhs.key);
             return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return !(key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return !(key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const const_iterator& rhs) const {
-            if(key==nullptr || rhs.key==nullptr)
-                return !(key==rhs.key);
+            if (key == nullptr || rhs.key == nullptr)
+                return !(key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         const value_type* operator->() const noexcept { return &*(*this); }
