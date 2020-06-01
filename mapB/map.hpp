@@ -185,9 +185,9 @@ private:
             if (root == nullptr)
                 return nullptr;
             if (!Compare()(root->value.first, to_query)) {
-                return __query_trav_small_(root->right, to_query);
+                return __query_trav_small_(root->left, to_query);
             } else {
-                node* ccmp = __query_trav_small_(root->left, to_query);
+                node* ccmp = __query_trav_small_(root->right, to_query);
                 if (ccmp == nullptr)
                     return root;
                 if (Compare()(ccmp->value.first, to_query)) {
@@ -505,17 +505,20 @@ public:
             if (mathis == nullptr)
                 throw invalid_iterator();
             typename AVL::node* nodesa;
-            if (key == nullptr && endflag != 1) {
-                throw invalid_iterator();
-            } else if (endflag == 1) {
-                nodesa = mathis->tree._last();
+            //logic error
+            if (key == nullptr) {
+                if (endflag != 1)
+                    throw invalid_iterator();
+                else
+                    nodesa = mathis->tree._last();
             } else {
                 nodesa = mathis->tree._previous_key(*key);
             }
             if (nodesa == nullptr) {
                 throw index_out_of_bound();
             } else {
-                delete key;
+                if (key != nullptr)
+                    delete key;
                 key = new Key(nodesa->value.first);
             }
             return *this;
@@ -544,15 +547,15 @@ public:
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-                //typo
-            return (!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
+            //logic
+            return (!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key));
         }
         bool operator!=(const const_iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return (!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
+            return (!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key));
         }
         value_type* operator->() const noexcept {
             return &*(*this);
@@ -688,14 +691,14 @@ public:
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return ((!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key)));
+            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const const_iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return ((!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key)));
+            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         const value_type* operator->() const noexcept { return &*(*this); }
     };
