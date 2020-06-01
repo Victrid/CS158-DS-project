@@ -297,12 +297,8 @@ private:
         int ___dtor_postorder_traverse(node* root) {
             if (root == nullptr)
                 return 0;
-            if (root->left != nullptr) {
-                ___dtor_postorder_traverse(root->left);
-            }
-            if (root->right != nullptr) {
-                ___dtor_postorder_traverse(root->right);
-            }
+            ___dtor_postorder_traverse(root->left);
+            ___dtor_postorder_traverse(root->right);
             delete root;
             return 0;
         }
@@ -313,11 +309,12 @@ private:
     public:
         AVL() : __data(nullptr), __size(0){};
         //Copy. (by modified insertion)
-        AVL(const AVL& a) {
+        //* Need to initiate an empty tree first.
+        AVL(const AVL& a) : __data(nullptr), __size(0) {
             ___ctor_inorder_traverse(a.__data, *this);
             return;
         };
-        AVL(const AVL&& a) {
+        AVL(const AVL&& a) : __data(nullptr), __size(0) {
             ___ctor_inorder_traverse(a.__data, *this);
             return;
         };
@@ -472,7 +469,11 @@ public:
             mathis = it.mathis;
             if (key != nullptr)
                 delete key;
-            key     = new Key(*it.key);
+            //Fix logic error
+            if (it.key != nullptr)
+                key = new Key(*it.key);
+            else
+                key = nullptr;
             endflag = it.endflag;
             return *this;
         }
@@ -527,21 +528,29 @@ public:
             return mathis->tree._find(*key)->value;
         }
         bool operator==(const iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return false;
             if (key == nullptr || rhs.key == nullptr)
                 return (key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator==(const const_iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return false;
             if (key == nullptr || rhs.key == nullptr)
                 return (key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
             (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
         }
         bool operator!=(const const_iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
             return (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
@@ -604,7 +613,10 @@ public:
             mathis = it.mathis;
             if (key != nullptr)
                 delete key;
-            key     = new Key(*it.key);
+            if (it.key != nullptr)
+                key = new Key(*it.key);
+            else
+                key = nullptr;
             endflag = it.endflag;
             return *this;
         }
@@ -658,22 +670,31 @@ public:
                 throw index_out_of_bound();
             return mathis->tree._find(*key)->value;
         }
+        //Fixed. Different iterators
         bool operator==(const iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return false;
             if (key == nullptr || rhs.key == nullptr)
                 return (key == rhs.key);
             return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator==(const const_iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return false;
             if (key == nullptr || rhs.key == nullptr)
                 return (key == rhs.key);
             return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const const_iterator& rhs) const {
+            if (mathis != rhs.mathis)
+                return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
             return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
@@ -695,19 +716,32 @@ public:
         return *this;
     }
     ~map() {}
+    //I'm blind. I didn't read the requirements.
     T& at(const Key& key) {
+        if (!tree._find(key))
+            throw index_out_of_bound();
         return tree[key];
     }
-    const T at(const Key& key) const {
+    const T& at(const Key& key) const {
+        if (!tree._find(key))
+            throw index_out_of_bound();
         return tree[key];
     }
     //* modified
     T& operator[](const Key& key) { return tree[key]; }
     T operator[](const Key& key) const { return tree[key]; }
     iterator begin() {
+        //To fit begin()==end(): aka empty()
+        if (tree.__size == 0) {
+            return end();
+        }
         return iterator(this, tree._first()->value.first);
     }
     const_iterator cbegin() const {
+        //To fit begin()==end(): aka empty()
+        if (tree.__size == 0) {
+            return cend();
+        }
         return const_iterator(this, tree._first()->value.first);
     }
     iterator end() {
@@ -755,7 +789,7 @@ public:
      * throw if pos pointed to a bad element (pos == this->end() || pos points an element out of this)
      */
     void erase(iterator& pos) {
-        if (pos.key == nullptr)
+        if (pos.key == nullptr || pos.mathis != this)
             throw invalid_iterator();
         try {
             tree.erase(*(pos.key));
@@ -764,7 +798,7 @@ public:
         }
     }
     void erase(iterator&& pos) {
-        if (pos.key == nullptr)
+        if (pos.key == nullptr || pos.mathis != this)
             throw invalid_iterator();
         try {
             tree.erase(*(pos.key));
