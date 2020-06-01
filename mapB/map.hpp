@@ -162,27 +162,39 @@ private:
         }
         //find the next bigger one
         node* __query_trav_big_(node* root, Key& to_query) const {
+            //* Rewriten. Logical problem.
             if (root == nullptr)
                 return nullptr;
-            if (!Compare()(root->value.first, to_query)) {
-                return __query_trav_(root->right, to_query);
+            if (!Compare()(to_query, root->value.first)) {
+                return __query_trav_big_(root->right, to_query);
             } else {
-                if (root->left == nullptr)
+                node* ccmp = __query_trav_big_(root->left, to_query);
+                if (ccmp == nullptr)
                     return root;
-                return __query_trav_(root->left, to_query);
+                if (Compare()(to_query, ccmp->value.first)) {
+                    return ccmp;
+                } else {
+                    return root;
+                }
             }
             return nullptr;
         }
         //find the next smaller one
         node* __query_trav_small_(node* root, Key& to_query) const {
+            //* Rewriten. Logical problem.
             if (root == nullptr)
                 return nullptr;
-            if (!Compare()(to_query, root->value.first)) {
-                return __query_trav_(root->left, to_query);
+            if (!Compare()(root->value.first, to_query)) {
+                return __query_trav_small_(root->right, to_query);
             } else {
-                if (root->right == nullptr)
+                node* ccmp = __query_trav_small_(root->left, to_query);
+                if (ccmp == nullptr)
                     return root;
-                return __query_trav_(root->right, to_query);
+                if (Compare()(ccmp->value.first, to_query)) {
+                    return ccmp;
+                } else {
+                    return root;
+                }
             }
             return nullptr;
         }
