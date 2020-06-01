@@ -679,21 +679,23 @@ public:
             return it;
         }
         const_iterator& operator--() {
-            if (mathis == nullptr)
+                       if (mathis == nullptr)
                 throw invalid_iterator();
             typename AVL::node* nodesa;
-            if (key == nullptr && endflag != 1) {
-                throw invalid_iterator();
-            } else if (endflag == 1) {
-                nodesa = mathis->tree._last();
+            //logic error
+            if (key == nullptr) {
+                if (endflag != 1)
+                    throw invalid_iterator();
+                else
+                    nodesa = mathis->tree._last();
             } else {
                 nodesa = mathis->tree._previous_key(*key);
             }
-            //Change logic
             if (nodesa == nullptr) {
                 throw index_out_of_bound();
             } else {
-                delete key;
+                if (key != nullptr)
+                    delete key;
                 key = new Key(nodesa->value.first);
             }
             return *this;
