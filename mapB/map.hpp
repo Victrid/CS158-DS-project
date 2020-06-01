@@ -198,6 +198,37 @@ private:
             }
             return nullptr;
         }
+        node* __parent(node* x) const {
+            node* y = __data;
+            while (true) {
+                if (y == nullptr || x == __data)
+                    return nullptr;
+                if (y->left == x || y->right == x)
+                    return y;
+                if (Compare()(y->value.first, x->value.first)) {
+                    y = y->right;
+                } else {
+                    y = y->left;
+                }
+            }
+            return y;
+        }
+        node* __new_query_trav_small(node* x) const {
+            node *tmp, *y = __data;
+            if (x->left != nullptr) {
+                tmp = x->left;
+                while (tmp->right != nullptr)
+                    tmp = tmp->right;
+
+                return tmp;
+            }
+            y = __parent(x);
+            while (y != nullptr && (x == y->left)) {
+                x = y;
+                y = __parent(y);
+            }
+            return y;
+        }
         //find the smallest one
         node* __query_trav_min_(node* root) const {
             if (root == nullptr)
@@ -392,6 +423,7 @@ private:
         }
         node* _previous_key(Key k) const {
             return __query_trav_small_(__data, k);
+            //return __new_query_trav_small(_find(k));
         }
         node* _first() const {
             return __query_trav_min_(__data);
@@ -548,14 +580,14 @@ public:
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
             //logic
-            return (!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key));
+            return (Compare()(*key, *(rhs.key))) || (Compare()(*(rhs.key), *key));
         }
         bool operator!=(const const_iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return (!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key));
+            return (Compare()(*key, *(rhs.key))) || (Compare()(*(rhs.key), *key));
         }
         value_type* operator->() const noexcept {
             return &*(*this);
@@ -677,28 +709,28 @@ public:
                 return false;
             if (key == nullptr || rhs.key == nullptr)
                 return (key == rhs.key);
-            return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
+            return (!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key));
         }
         bool operator==(const const_iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return false;
             if (key == nullptr || rhs.key == nullptr)
                 return (key == rhs.key);
-            return !((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
+            return (!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key));
         }
         bool operator!=(const iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
+            return (Compare()(*key, *(rhs.key))) || (Compare()(*(rhs.key), *key));
         }
         bool operator!=(const const_iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
+            return Compare()(*key, *(rhs.key)) || Compare()(*(rhs.key), *key);
         }
         const value_type* operator->() const noexcept { return &*(*this); }
     };
