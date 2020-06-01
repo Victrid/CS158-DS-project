@@ -513,9 +513,7 @@ public:
                 nodesa = mathis->tree._previous_key(*key);
             }
             if (nodesa == nullptr) {
-                delete key;
-                key     = nullptr;
-                endflag = 0;
+                throw index_out_of_bound();
             } else {
                 delete key;
                 key = new Key(nodesa->value.first);
@@ -546,14 +544,15 @@ public:
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
+                //typo
+            return (!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
         }
         bool operator!=(const const_iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return (Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
+            return (!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key));
         }
         value_type* operator->() const noexcept {
             return &*(*this);
@@ -655,10 +654,9 @@ public:
             } else {
                 nodesa = mathis->tree._previous_key(*key);
             }
+            //Change logic
             if (nodesa == nullptr) {
-                delete key;
-                key     = nullptr;
-                endflag = 0;
+                throw index_out_of_bound();
             } else {
                 delete key;
                 key = new Key(nodesa->value.first);
@@ -690,14 +688,14 @@ public:
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
+            return ((!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key)));
         }
         bool operator!=(const const_iterator& rhs) const {
             if (mathis != rhs.mathis)
                 return true;
             if (key == nullptr || rhs.key == nullptr)
                 return !(key == rhs.key);
-            return ((!Compare()(*key, *(rhs.key))) && (!Compare()(*(rhs.key), *key)));
+            return ((!Compare()(*key, *(rhs.key))) || (!Compare()(*(rhs.key), *key)));
         }
         const value_type* operator->() const noexcept { return &*(*this); }
     };
@@ -722,7 +720,7 @@ public:
             throw index_out_of_bound();
         return tree[key];
     }
-    const T& at(const Key& key) const {
+    const T at(const Key& key) const {
         if (!tree._find(key))
             throw index_out_of_bound();
         return tree[key];
