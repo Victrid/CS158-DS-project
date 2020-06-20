@@ -1,5 +1,19 @@
 # CS158 数据结构（荣誉）课程项目
 
+## 参考指引
+
+本学期我完成了vector、deque和map。（~~B+ tree完成不了，这要感谢电路实验和大物居家实验~~）
+
+[vector](https://github.com/Victrid/CS158-DS-project/blob/master/vector/vector.hpp) [deque](https://github.com/Victrid/CS158-DS-project/blob/master/deque/deque.hpp) [map](https://github.com/Victrid/CS158-DS-project/blob/master/mapB/map.hpp)
+
+虽然map放在mapB文件夹里，但是mapA和mapB的测试用例都已经通过。上面给出的三个链接都是通过且没有内存泄漏的版本。
+
+具体的实现过程很快就会写出来，可以参考realization文件夹内的内容。
+
+以下是任务说明。
+
+---
+
 ## 内容概要
 
 本学期大作业要求同学们完成三个任务：
